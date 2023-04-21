@@ -45,7 +45,7 @@ namespace Amend_Connection_Reference
             {
                 LogInfo("Settings found and loaded");
             }
-        }
+       }
 
         private void tsbClose_Click(object sender, EventArgs e)
         {
