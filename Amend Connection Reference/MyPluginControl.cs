@@ -30,23 +30,6 @@ namespace Amend_Connection_Reference
             
         }
 
-        private void MyPluginControl_Load(object sender, EventArgs e)
-        {
-            ShowInfoNotification("This is a notification that can lead to XrmToolBox repository", new Uri("https://github.com/MscrmTools/XrmToolBox"));
-
-            // Loads or creates the settings for the plugin
-            if (!SettingsManager.Instance.TryLoad(GetType(), out mySettings))
-            {
-                mySettings = new Settings();
-
-                LogWarning("Settings not found => a new settings file has been created!");
-            }
-            else
-            {
-                LogInfo("Settings found and loaded");
-            }
-       }
-
         private void tsbClose_Click(object sender, EventArgs e)
         {
             CloseTool();
