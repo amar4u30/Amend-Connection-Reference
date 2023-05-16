@@ -135,7 +135,7 @@ namespace Amend_Connection_Reference
                 {
                     var fetchData = new
                     {
-                        connectionreferencelogicalname = "%sharedcommondataserviceforapps%"
+                        connectorid = "/providers/Microsoft.PowerApps/apis/shared_commondataserviceforapps"
                     };
                     var fetchXml = $@"
                         <fetch>
@@ -145,7 +145,7 @@ namespace Amend_Connection_Reference
                             <attribute name='ownerid' />
                             <order attribute='connectionreferencedisplayname' />
                             <filter>
-                              <condition attribute='connectionreferencelogicalname' operator='like' value='{fetchData.connectionreferencelogicalname/*%sharedcommondataserviceforapps%*/}' />
+                              <condition attribute='connectorid' operator='eq' value='{fetchData.connectorid}' />
                             </filter>
                           </entity>
                         </fetch>";
