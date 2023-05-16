@@ -27,7 +27,7 @@ namespace Amend_Connection_Reference
         public MyPluginControl()
         {
             InitializeComponent();
-            
+
         }
 
         private void tsbClose_Click(object sender, EventArgs e)
@@ -63,6 +63,8 @@ namespace Amend_Connection_Reference
         {
             try
             {
+                this.comboBox2.Items.Clear();
+                this.comboBox1.Items.Clear();
                 GetCloudFlows();
                 GetConnectionReference();
             }
@@ -166,7 +168,7 @@ namespace Amend_Connection_Reference
                         {
                             connRefName = new ConnectionReferenceName();
                             connRefName.connectionRefLogicalName = item.Attributes["connectionreferencelogicalname"].ToString();
-                            connRefName.connectionRefDisplayName = item.Attributes["connectionreferencedisplayname"].ToString();
+                            connRefName.connectionRefDisplayName = $"{item.Attributes["connectionreferencedisplayname"]} - {item.Attributes["connectionreferencelogicalname"]}";
                             owner = (EntityReference)item.Attributes["ownerid"];
                             connRefName.ownerId = owner.Id.ToString();
                             comboBox2.Items.Add(connRefName);
@@ -264,7 +266,7 @@ namespace Amend_Connection_Reference
             });
         }
 
-        
+
     }
     public class Connection
     {
