@@ -168,7 +168,7 @@ namespace Amend_Connection_Reference
                         {
                             connRefName = new ConnectionReferenceName();
                             connRefName.connectionRefLogicalName = item.Attributes["connectionreferencelogicalname"].ToString();
-                            connRefName.connectionRefDisplayName = $"{item.Attributes["connectionreferencedisplayname"]} - {item.Attributes["connectionreferencelogicalname"]}";
+                            connRefName.connectionRefDisplayName = $"{item.Attributes["connectionreferencedisplayname"]}, Logical Name: {item.Attributes["connectionreferencelogicalname"]}";
                             owner = (EntityReference)item.Attributes["ownerid"];
                             connRefName.ownerId = owner.Id.ToString();
                             comboBox2.Items.Add(connRefName);
@@ -201,7 +201,7 @@ namespace Amend_Connection_Reference
             }
             else
             {
-                MessageBox.Show("Please populate Cloud Flow and Connection Reference post clicking on Load Cloud Flows and Connection References Ribbon Button.");
+                MessageBox.Show("Please populate Cloud Flow and Connection Reference.");
             }
         }
         private void UpdateConnectionReference(WorkflowDetails flowDetails, ConnectionReferenceName connectionRefDetails)
@@ -249,7 +249,7 @@ namespace Amend_Connection_Reference
 
                     // Updating the workflow.
                     service.Update(workflowToUpdate);
-                    MessageBox.Show($"Connection Reference for Cloud Flow {flowDetails.workflowName} has been updated to {connectionRefDetails.connectionRefDisplayName}.");
+                    MessageBox.Show($"Cloud Flow {flowDetails.workflowName} has been updated with {connectionRefDetails.connectionRefDisplayName.Split(',')[0]}.");
                 },
                 PostWorkCallBack = (args) =>
                 {

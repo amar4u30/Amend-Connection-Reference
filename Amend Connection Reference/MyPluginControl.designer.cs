@@ -62,7 +62,7 @@ namespace Amend_Connection_Reference
             this.tsbClose.Image = ((System.Drawing.Image)(resources.GetObject("tsbClose.Image")));
             this.tsbClose.Name = "tsbClose";
             this.tsbClose.Size = new System.Drawing.Size(124, 28);
-            this.tsbClose.Text = "Close this tool";
+            this.tsbClose.Text = "Close";
             this.tsbClose.Click += new System.EventHandler(this.tsbClose_Click);
             // 
             // tssSeparator1
@@ -179,6 +179,7 @@ namespace Amend_Connection_Reference
             this.tableLayoutPanel1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
+            this.Load += new System.EventHandler(this.toolStripButton1_Click);
 
         }
         #endregion
