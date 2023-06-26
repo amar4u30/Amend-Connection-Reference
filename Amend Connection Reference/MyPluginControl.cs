@@ -122,6 +122,7 @@ namespace Amend_Connection_Reference
                             workflowDetails.workflowName = item.Attributes["name"].ToString();
                             workflowDetails.workflowid = Guid.Parse(item.Attributes["workflowid"].ToString());
                             comboBox1.Items.Add(workflowDetails);
+                            checkedListBox1.Items.Add(workflowDetails);
                         }
                     }
                 }
@@ -194,17 +195,18 @@ namespace Amend_Connection_Reference
             var flowDetails = (WorkflowDetails)this.comboBox1.SelectedItem;
             var connectionRef = (ConnectionReferenceName)this.comboBox2.SelectedItem;
             var selectIndexConnectionReference = this.comboBox2.SelectedIndex;
-            var selectIndexFlow = this.comboBox1.SelectedIndex;
+            var selectIndexFlow = this.checkedListBox1.SelectedIndex;
             if (selectIndexConnectionReference != -1 && selectIndexFlow != -1)
             {
-                this.UpdateConnectionReference(flowDetails, connectionRef);
+                var checkedItems = this.checkedListBox1.CheckedItems;
+                this.UpdateConnectionReference(checkedItems, connectionRef);
             }
             else
             {
-                MessageBox.Show("Please populate Cloud Flow and Connection Reference.");
+                MessageBox.Show("Please Select Cloud Flow and Connection Reference.");
             }
         }
-        private void UpdateConnectionReference(WorkflowDetails flowDetails, ConnectionReferenceName connectionRefDetails)
+        private void UpdateConnectionReference(CheckedListBox.CheckedItemCollection checkedItems, ConnectionReferenceName connectionRefDetails)
         {
             WorkAsync(new WorkAsyncInfo
             {
@@ -215,41 +217,50 @@ namespace Amend_Connection_Reference
                     var service = _connectionDetail.GetCrmServiceClient(true);
 
                     service.CallerId = Guid.Parse(connectionRefDetails.ownerId);
+                    try
+                    {
+                        foreach (WorkflowDetails item in checkedItems)
+                        {
+                            string clientData = item.clientData;
+                            var connectionRef = "";
 
-                    string clientData = flowDetails.clientData;
-                    var connectionRef = "";
+                            var connectionReferences = new ConnectionReferences();
+                            var sharedCommondataserviceforapps = new SharedCommondataserviceforapps();
+                            var connect = new Connection();
+                            var api = new Api();
 
-                    var connectionReferences = new ConnectionReferences();
-                    var sharedCommondataserviceforapps = new SharedCommondataserviceforapps();
-                    var connect = new Connection();
-                    var api = new Api();
+                            api.name = "shared_commondataserviceforapps";
+                            connect.connectionReferenceLogicalName = connectionRefDetails.connectionRefLogicalName;
+                            sharedCommondataserviceforapps.runtimeSource = "embedded";
+                            sharedCommondataserviceforapps.connection = connect;
+                            sharedCommondataserviceforapps.api = api;
+                            connectionReferences.shared_commondataserviceforapps = sharedCommondataserviceforapps;
+                            connectionRef = JsonConvert.SerializeObject(connectionReferences);
+                            var newConnectionReference = JObject.Parse(connectionRef);
 
-                    api.name = "shared_commondataserviceforapps";
-                    connect.connectionReferenceLogicalName = connectionRefDetails.connectionRefLogicalName;
-                    sharedCommondataserviceforapps.runtimeSource = "embedded";
-                    sharedCommondataserviceforapps.connection = connect;
-                    sharedCommondataserviceforapps.api = api;
-                    connectionReferences.shared_commondataserviceforapps = sharedCommondataserviceforapps;
-                    connectionRef = JsonConvert.SerializeObject(connectionReferences);
-                    var newConnectionReference = JObject.Parse(connectionRef);
+                            string pattern = "shared_commondataserviceforapps_[0-9]+";
+                            Regex rg = new Regex(pattern);
+                            var cloudflowClientData = JObject.Parse(clientData);
 
-                    string pattern = "shared_commondataserviceforapps_[0-9]+";
-                    Regex rg = new Regex(pattern);
-                    var cloudflowClientData = JObject.Parse(clientData);
+                            // Updating exisiting connection reference with New connection reference.
+                            cloudflowClientData["properties"]["connectionReferences"] = newConnectionReference;
 
-                    // Updating exisiting connection reference with New connection reference.
-                    cloudflowClientData["properties"]["connectionReferences"] = newConnectionReference;
+                            // Replacing all shared_commondataserviceforapps_[0-9] with shared_commondataserviceforapps.
+                            clientData = Regex.Replace(cloudflowClientData.ToString(), pattern, "shared_commondataserviceforapps");
 
-                    // Replacing all shared_commondataserviceforapps_[0-9] with shared_commondataserviceforapps.
-                    clientData = Regex.Replace(cloudflowClientData.ToString(), pattern, "shared_commondataserviceforapps");
+                            var workflowToUpdate = new Entity("workflow");
+                            workflowToUpdate["workflowid"] = item.workflowid;
+                            workflowToUpdate["clientdata"] = clientData;
 
-                    var workflowToUpdate = new Entity("workflow");
-                    workflowToUpdate["workflowid"] = flowDetails.workflowid;
-                    workflowToUpdate["clientdata"] = clientData;
-
-                    // Updating the workflow.
-                    service.Update(workflowToUpdate);
-                    MessageBox.Show($"Cloud Flow {flowDetails.workflowName} has been updated with {connectionRefDetails.connectionRefDisplayName.Split(',')[0]}.");
+                            // Updating the workflow.
+                            service.Update(workflowToUpdate);
+                        }
+                        MessageBox.Show($"Selected Cloud Flow(s) have been updated with {connectionRefDetails.connectionRefDisplayName.Split(',')[0]}.");
+                    }
+                    catch (Exception exc)
+                    {
+                        MessageBox.Show($"Unexpected Error Occured, Message: {exc.Message}");
+                    }
                 },
                 PostWorkCallBack = (args) =>
                 {
@@ -266,7 +277,13 @@ namespace Amend_Connection_Reference
             });
         }
 
-
+        private void checkBox1_CheckedChanged(object sender, EventArgs e)
+        {
+            for (int i = 0; i < this.checkedListBox1.Items.Count; i++)
+            {
+                checkedListBox1.SetItemChecked(i, checkBox1.Checked);
+            }
+        }
     }
     public class Connection
     {
