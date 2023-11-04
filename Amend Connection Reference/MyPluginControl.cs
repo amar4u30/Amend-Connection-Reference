@@ -63,16 +63,21 @@ namespace Amend_Connection_Reference
         {
             try
             {
-                this.comboBox2.Items.Clear();
-                this.comboBox1.Items.Clear();
-                GetCloudFlows();
-                GetConnectionReference();
+                reloadFlowsandConnectionReferences();
             }
             catch (Exception ex)
             {
                 MessageBox.Show($"Error: {ex.Message}.");
             }
 
+        }
+        private void reloadFlowsandConnectionReferences()
+        {
+            this.comboBox2.Items.Clear();
+            this.comboBox1.Items.Clear();
+            this.checkedListBox1.Items.Clear();
+            GetCloudFlows();
+            GetConnectionReference();
         }
 
         private void GetCloudFlows()
@@ -147,9 +152,7 @@ namespace Amend_Connection_Reference
                             <attribute name='connectionreferencelogicalname' />
                             <attribute name='ownerid' />
                             <order attribute='connectionreferencedisplayname' />
-                            <filter>
-                              <condition attribute='connectorid' operator='eq' value='{fetchData.connectorid}' />
-                            </filter>
+                            
                           </entity>
                         </fetch>";
                     args.Result = Service.RetrieveMultiple(new FetchExpression(fetchXml));
@@ -174,7 +177,7 @@ namespace Amend_Connection_Reference
                             connRefName.ownerId = owner.Id.ToString();
                             comboBox2.Items.Add(connRefName);
                         }
-                        MessageBox.Show("Retrieved Cloud Flows and Connection References.");
+                        //MessageBox.Show("Retrieved Cloud Flows and Connection References.");
                     }
                 }
             });
@@ -200,6 +203,7 @@ namespace Amend_Connection_Reference
             {
                 var checkedItems = this.checkedListBox1.CheckedItems;
                 this.UpdateConnectionReference(checkedItems, connectionRef);
+                //this.PopulateDataGridView();
             }
             else
             {
@@ -215,47 +219,101 @@ namespace Amend_Connection_Reference
                 {
                     //var connectionDetail = new ConnectionDetail();
                     var service = _connectionDetail.GetCrmServiceClient(true);
-
+                    var updateFlag = false;
+                    var systemCreatedConnectionReference = false;
                     service.CallerId = Guid.Parse(connectionRefDetails.ownerId);
                     try
                     {
-                        foreach (WorkflowDetails item in checkedItems)
+                        if (false/*connectionRefDetails.connectionRefLogicalName.Contains("commondataserviceforapps")*/)
                         {
-                            string clientData = item.clientData;
-                            var connectionRef = "";
+                            foreach (WorkflowDetails item in checkedItems)
+                            {
+                                string clientData = item.clientData;
+                                var connectionRef = "";
 
-                            var connectionReferences = new ConnectionReferences();
-                            var sharedCommondataserviceforapps = new SharedCommondataserviceforapps();
-                            var connect = new Connection();
-                            var api = new Api();
+                                var connectionReferences = new ConnectionReferences();
+                                var sharedCommondataserviceforapps = new SharedCommondataserviceforapps();
+                                var connect = new Connection();
+                                var api = new Api();
 
-                            api.name = "shared_commondataserviceforapps";
-                            connect.connectionReferenceLogicalName = connectionRefDetails.connectionRefLogicalName;
-                            sharedCommondataserviceforapps.runtimeSource = "embedded";
-                            sharedCommondataserviceforapps.connection = connect;
-                            sharedCommondataserviceforapps.api = api;
-                            connectionReferences.shared_commondataserviceforapps = sharedCommondataserviceforapps;
-                            connectionRef = JsonConvert.SerializeObject(connectionReferences);
-                            var newConnectionReference = JObject.Parse(connectionRef);
+                                api.name = "shared_commondataserviceforapps";
+                                connect.connectionReferenceLogicalName = connectionRefDetails.connectionRefLogicalName;
+                                sharedCommondataserviceforapps.runtimeSource = "embedded";
+                                sharedCommondataserviceforapps.connection = connect;
+                                sharedCommondataserviceforapps.api = api;
+                                connectionReferences.shared_commondataserviceforapps = sharedCommondataserviceforapps;
+                                connectionRef = JsonConvert.SerializeObject(connectionReferences);
+                                var newConnectionReference = JObject.Parse(connectionRef);
 
-                            string pattern = "shared_commondataserviceforapps_[0-9]+";
-                            Regex rg = new Regex(pattern);
-                            var cloudflowClientData = JObject.Parse(clientData);
+                                string pattern = "shared_commondataserviceforapps_[0-9]+";
+                                Regex rg = new Regex(pattern);
+                                var cloudflowClientData = JObject.Parse(clientData);
 
-                            // Updating exisiting connection reference with New connection reference.
-                            cloudflowClientData["properties"]["connectionReferences"] = newConnectionReference;
+                                // Updating exisiting connection reference with New connection reference.
+                                cloudflowClientData["properties"]["connectionReferences"] = newConnectionReference;
 
-                            // Replacing all shared_commondataserviceforapps_[0-9] with shared_commondataserviceforapps.
-                            clientData = Regex.Replace(cloudflowClientData.ToString(), pattern, "shared_commondataserviceforapps");
+                                // Replacing all shared_commondataserviceforapps_[0-9] with shared_commondataserviceforapps.
+                                clientData = Regex.Replace(cloudflowClientData.ToString(), pattern, "shared_commondataserviceforapps");
 
-                            var workflowToUpdate = new Entity("workflow");
-                            workflowToUpdate["workflowid"] = item.workflowid;
-                            workflowToUpdate["clientdata"] = clientData;
+                                var workflowToUpdate = new Entity("workflow");
+                                workflowToUpdate["workflowid"] = item.workflowid;
+                                workflowToUpdate["clientdata"] = clientData;
 
-                            // Updating the workflow.
-                            service.Update(workflowToUpdate);
+                                // Updating the workflow.
+                                service.Update(workflowToUpdate);
+                            }
                         }
-                        MessageBox.Show($"Selected Cloud Flow(s) have been updated with {connectionRefDetails.connectionRefDisplayName.Split(',')[0]}.");
+                        else
+                        {
+                            var connectionRef = "";
+                            var existingStart = connectionRefDetails.connectionRefLogicalName.IndexOf("_");
+                            var existingEnd = connectionRefDetails.connectionRefLogicalName.IndexOf("_", existingStart + 1);
+                            if(existingEnd !=-1 && existingEnd != -1)
+                            {
+                                systemCreatedConnectionReference = true;
+                                var existingConnectionName = connectionRefDetails.connectionRefLogicalName.Substring(existingStart + 1, existingEnd - existingStart - 1);
+                                foreach (WorkflowDetails item in checkedItems)
+                                {
+                                    string clientData = item.clientData;
+
+                                    var connectioName = existingConnectionName.Replace("shared", null);
+                                    string pattern = $"shared_{connectioName}_[0-9]+";
+                                    clientData = Regex.Replace(clientData.ToString(), pattern, $"shared_{connectioName}");
+
+
+                                    var indexOfString = clientData.IndexOf(existingConnectionName);
+                                    if (indexOfString != -1)
+                                    {
+                                        var start = clientData.LastIndexOf("\"", indexOfString);
+                                        var end = clientData.IndexOf("_", indexOfString);
+                                        var connectionRefToBeReplaced = clientData.Substring(start + 1, end - start - 1);
+
+                                        pattern = $"{connectionRefToBeReplaced}_[a-zA-Z0-9]+";
+                                        clientData = Regex.Replace(clientData.ToString(), pattern, connectionRefDetails.connectionRefLogicalName);
+
+                                        var workflowToUpdate = new Entity("workflow");
+                                        workflowToUpdate["workflowid"] = item.workflowid;
+                                        workflowToUpdate["clientdata"] = clientData;
+
+                                        // Updating the workflow.
+                                        service.Update(workflowToUpdate);
+                                        updateFlag = true;
+                                    }
+                                }
+                            }
+                        }
+                        if (!systemCreatedConnectionReference)
+                        {
+                            MessageBox.Show($"Opps! Looks like you are trying to update with a manually created Connection Reference. \nThe tool is not configured to handle manually created Connection Reference, please use a Connection Reference created from a Cloud Flow.");
+                        }
+                        else if (updateFlag)
+                        {
+                            MessageBox.Show($"The Selected Cloud Flow(s) having matching Connection Reference with {connectionRefDetails.connectionRefDisplayName.Split(',')[0]} have been updated.");
+                        }
+                        else
+                        {
+                            MessageBox.Show($"Sorry! The Selected Cloud Flow(s) doesnt have a matching Connection Reference with {connectionRefDetails.connectionRefDisplayName.Split(',')[0]} hence couldnt be updated.");
+                        }
                     }
                     catch (Exception exc)
                     {
@@ -273,6 +331,8 @@ namespace Amend_Connection_Reference
                     {
                         MessageBox.Show($"Connection Reference has been updated.");
                     }
+                    this.checkedListBox1.Items.Clear();
+                    this.GetCloudFlows();
                 }
             });
         }
@@ -284,6 +344,102 @@ namespace Amend_Connection_Reference
                 checkedListBox1.SetItemChecked(i, checkBox1.Checked);
             }
         }
+
+        private void tableLayoutPanel1_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void checkedListBox1_SelectedIndexChanged(object sender, EventArgs e)
+        {
+            //PopulateDataGridView();
+        }
+        private void PopulateDataGridView()
+        {
+            this.dataGridView1.Rows.Clear();
+            var checkedItems = checkedListBox1.CheckedItems;
+            var connectionList = new List<ConnectionObject>();
+            if (checkedItems.Count > 0)
+            {
+                WorkAsync(new WorkAsyncInfo
+                {
+                    Message = "Fetching Connection Reference(s)",
+                    Work = (worker, args) =>
+                    {
+                        foreach (WorkflowDetails item in checkedItems)
+                        {
+                            var firstTime = true;
+                            var cloudflowClientData = JObject.Parse(item.clientData);
+                            var filterString = new StringBuilder("");
+                            var connectionReferencesList = (JObject)cloudflowClientData["properties"]?["connectionReferences"];
+                            foreach (KeyValuePair<string, JToken> connectionReference in connectionReferencesList)
+                            {
+                                string keyName = connectionReference.Key;
+                                var value = cloudflowClientData["properties"]?["connectionReferences"]?[keyName]?["connection"]?["connectionReferenceLogicalName"]?.ToString();
+                                filterString.Append($"<condition attribute='connectionreferencelogicalname' operator='eq' value='{value}' />");
+                            }
+
+                            var connectionReferenceDisplayName = "";
+                            var fetchXml = $@"
+                                        <fetch>
+                                          <entity name='connectionreference'>
+                                            <attribute name='connectionreferencedisplayname' />
+                                            <attribute name='connectionreferencelogicalname' />
+                                            <attribute name='ownerid' />
+                                            <order attribute='connectionreferencedisplayname' />
+                                            <filter type='or'>
+                                             {filterString}
+                                            </filter>
+                                          </entity>
+                                        </fetch>";
+                            EntityCollection connectionReferences = Service.RetrieveMultiple(new FetchExpression(fetchXml));
+                            foreach (var connectionReference in connectionReferences.Entities)
+                            {
+                                connectionReferenceDisplayName = connectionReference.Attributes["connectionreferencedisplayname"].ToString();
+                                var connectionObj = new ConnectionObject()
+                                {
+                                    connectionReferenceLogicalName = connectionReferenceDisplayName,
+                                    flowName = firstTime ? item.workflowName : ""
+                                };
+                                connectionList.Add(connectionObj);
+                                firstTime = false;
+                            }
+                            
+                        }
+                    },
+                    PostWorkCallBack = (args) =>
+                    {
+                        if (args.Error != null)
+                        {
+                            MessageBox.Show(args.Error.ToString(), "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                        }
+                        foreach (var item in connectionList)
+                        {
+                            dataGridView1.Rows.Add(item.flowName, item.connectionReferenceLogicalName);
+                        }
+                    }
+                });
+                
+            }
+            else
+            {
+                MessageBox.Show("Please Select Cloud Flow(s).");
+            }
+        }
+
+        private void button2_Click(object sender, EventArgs e)
+        {
+            PopulateDataGridView();
+        }
+    }
+    public class Property
+    {
+        public List<string> connectionReferences { get; set; }
+    }
+    public class ConnectionObject
+    {
+        public string connectionReferenceLogicalName { get; set; }
+        public string flowName { get; set; }
     }
     public class Connection
     {
