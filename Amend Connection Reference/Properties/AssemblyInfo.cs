@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyTitle("Amend Connection Reference")]
 [assembly: AssemblyDescription("This is a tool to update Connection Reference of Cloud Flows.")]
 [assembly: AssemblyConfiguration("Debug")]
-[assembly: AssemblyCompany("Amarnath R")]
+[assembly: AssemblyCompany("Amarnath R & Vamsi Varma")]
 [assembly: AssemblyProduct("Amend Connection Reference")]
 [assembly: AssemblyCopyright("Copyright ©  2026")]
 [assembly: AssemblyTrademark("NA")]
