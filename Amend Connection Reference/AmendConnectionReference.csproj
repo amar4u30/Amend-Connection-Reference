@@ -9,7 +9,7 @@
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>Amend_Connection_Reference</RootNamespace>
-    <AssemblyName>Amend Connection Reference</AssemblyName>
+    <AssemblyName>AmendConnectionReference</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <NuGetPackageImportStamp>
